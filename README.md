@@ -1,4 +1,4 @@
-# Onboarding Task
+# Onboarding Task V2 (Vite)
 
 ### Goal
 
@@ -25,3 +25,8 @@ Understand how to create and use React JS components
 -   Use AJAX inside React components to post to/get from the controller
 -   Use plain javascript not typescript
 -   Use Semantic-UI-React modals in views
+
+## Screenshots
+
+![App Screenshot](screenshots/screen01.png?text=App+Screenshot+Here)
+![App Screenshot](screenshots/screen02.png?text=App+Screenshot+Here)

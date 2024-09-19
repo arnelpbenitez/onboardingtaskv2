@@ -1,0 +1,6 @@
+@OnboardingTask.Server_HostAddress = http://localhost:5149
+
+GET {{OnboardingTask.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

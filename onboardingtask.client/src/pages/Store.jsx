@@ -23,6 +23,14 @@ export default class Store extends Component {
 			recordId: id,
 			data: { id, name, address },
 			open: true,
+			message: "",
+		});
+	};
+
+	handleDeleteRecord = (success, message) => {
+		this.setState({
+			success: success,
+			message: message,
 		});
 	};
 
@@ -30,6 +38,15 @@ export default class Store extends Component {
 		this.setState({
 			recordId: 0,
 		});
+	};
+
+	getStoresList = async () => {
+		await fetch("/stores")
+			.then((data) => data.json())
+			.then((json) => this.setState({ stores: json, loading: false }))
+			.catch((error) => {
+				console.log(error);
+			});
 	};
 
 	render() {
@@ -42,23 +59,17 @@ export default class Store extends Component {
 						data={this.state.data}
 						open={this.state.open}
 						closeForm={this.handleCloseForm}
+						success={this.state.success}
+						message={this.state.message}
 					/>
 					<StoreList
 						stores={this.state.stores}
 						editRecord={this.handleEditRecord}
 						loading={this.state.loading}
+						deleteRecord={this.handleDeleteRecord}
 					/>
 				</div>
 			</div>
 		);
 	}
-
-	getStoresList = async () => {
-		await fetch("/stores")
-			.then((data) => data.json())
-			.then((json) => this.setState({ stores: json, loading: false }))
-			.catch((error) => {
-				console.log(error);
-			});
-	};
 }

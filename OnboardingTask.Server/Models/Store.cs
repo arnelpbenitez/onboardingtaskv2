@@ -9,15 +9,16 @@ namespace OnboardingTask.Server.Models;
 [Table("Store")]
 public partial class Store
 {
-    [Key]
-    public int Id { get; set; }
+	[Key]
+	public int Id { get; set; }
 
-    [StringLength(100)]
-    public string Name { get; set; } = null!;
+	[Required(ErrorMessage = "Store Name is required")]
+	[StringLength(100, ErrorMessage = "Name cannot be longer than 100 characters")]
+	public required string Name { get; set; }
 
-    [StringLength(100)]
-    public string? Address { get; set; }
+	[StringLength(100)]
+	public string? Address { get; set; }
 
-    [InverseProperty("Store")]
-    public virtual ICollection<Sale> Sales { get; set; } = new List<Sale>();
+	[InverseProperty("Store")]
+	public virtual ICollection<Sale> Sales { get; set; } = new List<Sale>();
 }

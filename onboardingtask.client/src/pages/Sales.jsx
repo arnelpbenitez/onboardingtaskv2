@@ -24,6 +24,14 @@ export default class Sale extends Component {
 			recordId: record.id,
 			data: record,
 			open: true,
+			message: "",
+		});
+	};
+
+	handleDeleteRecord = (success, message) => {
+		this.setState({
+			success: success,
+			message: message,
 		});
 	};
 
@@ -31,6 +39,15 @@ export default class Sale extends Component {
 		this.setState({
 			recordId: 0,
 		});
+	};
+
+	getSalesList = async () => {
+		await fetch("/sales")
+			.then((data) => data.json())
+			.then((json) => this.setState({ sales: json, loading: false }))
+			.catch((error) => {
+				console.log(error);
+			});
 	};
 
 	render() {
@@ -42,23 +59,17 @@ export default class Sale extends Component {
 					data={this.state.data}
 					open={this.state.open}
 					closeForm={this.handleCloseForm}
+					success={this.state.success}
+					message={this.state.message}
 				/>
 				<SaleList
 					sales={this.state.sales}
 					editRecord={this.handleEditRecord}
 					closeForm={this.handleCloseForm}
 					loading={this.state.loading}
+					deleteRecord={this.handleDeleteRecord}
 				/>
 			</Segment>
 		);
 	}
-
-	getSalesList = async () => {
-		await fetch("/sales")
-			.then((data) => data.json())
-			.then((json) => this.setState({ sales: json, loading: false }))
-			.catch((error) => {
-				console.log(error);
-			});
-	};
 }

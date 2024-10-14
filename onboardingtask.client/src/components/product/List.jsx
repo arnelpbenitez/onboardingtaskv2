@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import {
 	TableRow,
 	TableHeaderCell,
@@ -25,6 +25,9 @@ export default class ProductList extends Component {
 		activePage: 1,
 		open: false,
 		loading: true,
+		success: false,
+		error: false,
+		message: "",
 	};
 
 	componentDidUpdate(prevProps) {
@@ -60,30 +63,58 @@ export default class ProductList extends Component {
 	};
 
 	deleteProduct = async () => {
+		if (!this.state.recordId) {
+			this.setState({
+				error: true,
+				success: false,
+				message: "Invalid product id",
+			});
+			return;
+		}
+
 		await fetch(`/products/${this.state.recordId}`, {
 			method: "DELETE",
 			headers: { "Content-Type": "application/json" },
 		})
 			.then((data) => {
-				const products = this.state.products.filter(
-					(product) => product.id !== this.state.recordId
-				);
-				this.setState({ products });
+				if (data.ok) {
+					const products = this.state.products.filter(
+						(product) => product.id !== this.state.recordId
+					);
+					this.setState({ products });
 
-				const limit = 5;
+					const limit = 5;
 
+					this.setState({
+						begin: this.state.activePage * limit - limit,
+						end: this.state.activePage * limit,
+						productsPaged: products.slice(
+							this.state.activePage * limit - limit,
+							this.state.activePage * limit
+						),
+						open: false,
+					});
+
+					this.props.deleteRecord(
+						true,
+						"Record deleted successfully."
+					);
+				}
+				return data.json();
+			})
+			.then((json) => {
+				if (json.error) {
+					throw new Error(json.message);
+				}
+			})
+			.catch((e) => {
 				this.setState({
-					begin: this.state.activePage * limit - limit,
-					end: this.state.activePage * limit,
-					productsPaged: products.slice(
-						this.state.activePage * limit - limit,
-						this.state.activePage * limit
-					),
 					open: false,
 				});
-			})
-			.catch((error) => {
-				console.log(error);
+				this.props.deleteRecord(
+					false,
+					e.message || "Something went wrong"
+				);
 			});
 	};
 

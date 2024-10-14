@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import {
 	TableRow,
 	TableHeaderCell,
@@ -25,6 +25,9 @@ export default class SaleList extends Component {
 		activePage: 1,
 		open: false,
 		loading: this.props.loading,
+		success: false,
+		error: false,
+		message: "",
 	};
 
 	componentDidUpdate(prevProps) {
@@ -63,30 +66,58 @@ export default class SaleList extends Component {
 	};
 
 	deleteSale = async () => {
+		if (!this.state.recordId) {
+			this.setState({
+				error: true,
+				success: false,
+				message: "Invalid sale id",
+			});
+			return;
+		}
+
 		await fetch(`/sales/${this.state.recordId}`, {
 			method: "DELETE",
 			headers: { "Content-Type": "application/json" },
 		})
 			.then((data) => {
-				const sales = this.state.sales.filter(
-					(sale) => sale.id !== this.state.recordId
-				);
-				this.setState({ sales });
+				if (data.ok) {
+					const sales = this.state.sales.filter(
+						(sale) => sale.id !== this.state.recordId
+					);
+					this.setState({ sales });
 
-				const limit = 5;
+					const limit = 5;
 
+					this.setState({
+						begin: this.state.activePage * limit - limit,
+						end: this.state.activePage * limit,
+						salesPaged: sales.slice(
+							this.state.activePage * limit - limit,
+							this.state.activePage * limit
+						),
+						open: false,
+					});
+
+					this.props.deleteRecord(
+						true,
+						"Record deleted successfully."
+					);
+				}
+				return data.json();
+			})
+			.then((json) => {
+				if (json.error) {
+					throw new Error(json.message);
+				}
+			})
+			.catch((e) => {
 				this.setState({
-					begin: this.state.activePage * limit - limit,
-					end: this.state.activePage * limit,
-					salesPaged: sales.slice(
-						this.state.activePage * limit - limit,
-						this.state.activePage * limit
-					),
 					open: false,
 				});
-			})
-			.catch((error) => {
-				console.log(error);
+				this.props.deleteRecord(
+					false,
+					e.message || "Something went wrong"
+				);
 			});
 	};
 

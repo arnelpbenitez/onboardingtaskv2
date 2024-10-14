@@ -24,6 +24,14 @@ export default class Product extends Component {
 			recordId: id,
 			data: { id, name, price },
 			open: true,
+			message: "",
+		});
+	};
+
+	handleDeleteRecord = (success, message) => {
+		this.setState({
+			success: success,
+			message: message,
 		});
 	};
 
@@ -31,6 +39,15 @@ export default class Product extends Component {
 		this.setState({
 			recordId: 0,
 		});
+	};
+
+	getProductsList = async () => {
+		await fetch("/products")
+			.then((data) => data.json())
+			.then((json) => this.setState({ products: json, loading: false }))
+			.catch((error) => {
+				console.log(error);
+			});
 	};
 
 	render() {
@@ -42,22 +59,16 @@ export default class Product extends Component {
 					data={this.state.data}
 					open={this.state.open}
 					closeForm={this.handleCloseForm}
+					success={this.state.success}
+					message={this.state.message}
 				/>
 				<ProductList
 					products={this.state.products}
 					editRecord={this.handleEditRecord}
 					loading={this.state.loading}
+					deleteRecord={this.handleDeleteRecord}
 				/>
 			</Segment>
 		);
 	}
-
-	getProductsList = async () => {
-		await fetch("/products")
-			.then((data) => data.json())
-			.then((json) => this.setState({ products: json, loading: false }))
-			.catch((error) => {
-				console.log(error);
-			});
-	};
 }

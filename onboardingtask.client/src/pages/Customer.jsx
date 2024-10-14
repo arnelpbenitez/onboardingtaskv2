@@ -24,6 +24,14 @@ export default class Customer extends Component {
 			recordId: id,
 			data: { id, name, address },
 			open: true,
+			message: "",
+		});
+	};
+
+	handleDeleteRecord = (success, message) => {
+		this.setState({
+			success: success,
+			message: message,
 		});
 	};
 
@@ -31,6 +39,15 @@ export default class Customer extends Component {
 		this.setState({
 			recordId: 0,
 		});
+	};
+
+	getCustomersList = async () => {
+		await fetch("/customers")
+			.then((data) => data.json())
+			.then((json) => this.setState({ customers: json, loading: false }))
+			.catch((error) => {
+				console.log(error);
+			});
 	};
 
 	render() {
@@ -42,22 +59,16 @@ export default class Customer extends Component {
 					data={this.state.data}
 					open={this.state.open}
 					closeForm={this.handleCloseForm}
+					success={this.state.success}
+					message={this.state.message}
 				/>
 				<CustomerList
 					customers={this.state.customers}
 					editRecord={this.handleEditRecord}
 					loading={this.state.loading}
+					deleteRecord={this.handleDeleteRecord}
 				/>
 			</Segment>
 		);
 	}
-
-	getCustomersList = async () => {
-		await fetch("/customers")
-			.then((data) => data.json())
-			.then((json) => this.setState({ customers: json, loading: false }))
-			.catch((error) => {
-				console.log(error);
-			});
-	};
 }

@@ -6,7 +6,7 @@ const items = [
 	{ key: "customer", name: "Customers", active: true },
 	{ key: "product", name: "Products" },
 	{ key: "store", name: "Stores" },
-	{ key: "sales", name: "Sales" },
+	{ key: "sale", name: "Sales" },
 ];
 
 export class NavMenu extends Component {

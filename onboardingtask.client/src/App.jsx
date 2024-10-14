@@ -19,7 +19,7 @@ function App() {
 						<Route path="/customer" element={<Customer />} />
 						<Route path="/product" element={<Product />} />
 						<Route path="/store" element={<Store />} />
-						<Route path="/sales" element={<Sales />} />
+						<Route path="/sale" element={<Sales />} />
 						<Route path="*" element={<NotFound />} />
 					</Routes>
 				</Container>

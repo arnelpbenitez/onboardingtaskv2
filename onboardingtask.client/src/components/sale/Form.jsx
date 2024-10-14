@@ -1,5 +1,13 @@
-import React, { Component } from "react";
-import { Button, Form, Icon, Modal, Segment } from "semantic-ui-react";
+import { Component } from "react";
+import {
+	Button,
+	Form,
+	Icon,
+	Message,
+	MessageHeader,
+	Modal,
+	Segment,
+} from "semantic-ui-react";
 import SemanticDatepicker from "react-semantic-ui-datepickers";
 
 export default class SaleForm extends Component {
@@ -13,6 +21,9 @@ export default class SaleForm extends Component {
 		customers: [],
 		products: [],
 		stores: [],
+		success: false,
+		error: false,
+		message: "",
 	};
 
 	componentDidMount() {
@@ -32,6 +43,14 @@ export default class SaleForm extends Component {
 				store: this.props.data.storeId,
 			});
 		}
+
+		if (prevProps.message !== this.props.message) {
+			this.setState({
+				success: this.props.success,
+				error: !this.props.success,
+				message: this.props.message,
+			});
+		}
 	}
 
 	handleListChange = () => {
@@ -39,7 +58,26 @@ export default class SaleForm extends Component {
 	};
 
 	handleOpen = () =>
-		this.setState({ open: true, name: "", address: "", recordId: 0 });
+		this.setState({
+			open: true,
+			customer: 0,
+			store: 0,
+			product: 0,
+			recordId: 0,
+			error: false,
+			success: false,
+			message: "",
+		});
+
+	handleCancel = () => {
+		this.setState({
+			open: false,
+			message: "",
+			error: false,
+			success: false,
+		});
+		this.props.closeForm();
+	};
 
 	handleClose = () => {
 		this.setState({
@@ -65,15 +103,23 @@ export default class SaleForm extends Component {
 
 	handleSubmit = async (e) => {
 		e.preventDefault();
-		if (this.state.recordId > 0) {
-			await this.updateSale();
-		} else {
-			await this.addSale();
+		try {
+			if (this.state.recordId > 0) {
+				await this.updateSale();
+			} else {
+				await this.addSale();
+			}
+
+			this.handleListChange();
+
+			this.handleClose();
+		} catch (e) {
+			this.setState({
+				success: false,
+				error: true,
+				message: e.message ?? "An error occured.",
+			});
 		}
-
-		this.handleListChange();
-
-		this.handleClose();
 	};
 
 	getCustomersList = async () => {
@@ -102,10 +148,135 @@ export default class SaleForm extends Component {
 				console.log(error);
 			});
 	};
+
+	addSale = async () => {
+		if (!this.state.customer) {
+			throw new Error("Customer is required");
+		}
+
+		if (!this.state.product) {
+			throw new Error("Product is required");
+		}
+
+		if (!this.state.store) {
+			throw new Error("Store is required");
+		}
+
+		await fetch("/sales", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				id: 0,
+				productId: this.state.product,
+				customerId: this.state.customer,
+				storeId: this.state.store,
+				dateSold: this.state.dateSold,
+			}),
+		})
+			.then((data) => {
+				return data.json();
+			})
+			.then((json) => {
+				if (json.error) {
+					throw new Error(
+						json.message ?? "Something went wrong please try again."
+					);
+				} else if (json.errors) {
+					let message = [];
+					for (let key in json.errors) {
+						json.errors[key].forEach((item) => {
+							message = [...message, item];
+						});
+					}
+
+					throw new Error(
+						message.length
+							? message.join(" ")
+							: "Something went wrong please try again."
+					);
+				} else {
+					this.setState({
+						success: true,
+						error: false,
+						message: "New sale saved.",
+					});
+
+					return json;
+				}
+			})
+			.catch((error) => {
+				this.setState({
+					success: false,
+					error: true,
+					message:
+						error?.message ||
+						"An error has occurred please try again.",
+				});
+			});
+	};
+
+	updateSale = async () => {
+		if (!this.state.customer) {
+			throw new Error("Customer is required");
+		}
+
+		if (!this.state.product) {
+			throw new Error("Product is required");
+		}
+
+		if (!this.state.store) {
+			throw new Error("Store is required");
+		}
+
+		if (!this.state.recordId) {
+			throw new Error("Invalid sale ID");
+		}
+
+		await fetch(`/sales/${this.state.recordId}`, {
+			method: "PUT",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				id: this.state.recordId,
+				productId: this.state.product,
+				customerId: this.state.customer,
+				storeId: this.state.store,
+				dateSold: this.state.dateSold,
+			}),
+		})
+			.then((data) => data.json())
+			.then((json) => {
+				if (json.error) {
+					throw new Error(json.message);
+				}
+				this.setState({
+					error: false,
+					success: true,
+					message: "Sale record updated.",
+				});
+			})
+			.catch((e) => {
+				throw new Error(e.message);
+			});
+	};
+
 	render() {
-		const { open } = this.state;
+		const { open, message, success, error } = this.state;
 		return (
 			<Segment>
+				{success && message != "" && (
+					<Message positive>
+						<MessageHeader>Success</MessageHeader>
+						<p>{message}</p>
+					</Message>
+				)}
+
+				{error && message != "" && (
+					<Message negative>
+						<MessageHeader>Error</MessageHeader>
+						<p>{message}</p>
+					</Message>
+				)}
+
 				<Button primary onClick={this.handleOpen}>
 					New Sale
 				</Button>
@@ -115,6 +286,12 @@ export default class SaleForm extends Component {
 						{this.state.recordId === 0 ? "Create" : "Edit"} Sale
 					</Modal.Header>
 					<Modal.Content>
+						{error && message != "" && (
+							<Message negative>
+								<MessageHeader>Error</MessageHeader>
+								<p>{message}</p>
+							</Message>
+						)}
 						<Form onSubmit={this.handleSubmit}>
 							<Form.Field>
 								<label>Date</label>
@@ -196,7 +373,7 @@ export default class SaleForm extends Component {
 						</Form>
 					</Modal.Content>
 					<Modal.Actions>
-						<Button onClick={this.handleClose} secondary>
+						<Button onClick={this.handleCancel} secondary>
 							Cancel
 						</Button>
 						<Button
@@ -213,34 +390,4 @@ export default class SaleForm extends Component {
 			</Segment>
 		);
 	}
-
-	addSale = async () => {
-		await fetch("/sales", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-				id: 0,
-				productId: this.state.product,
-				customerId: this.state.customer,
-				storeId: this.state.store,
-				dateSold: this.state.dateSold,
-			}),
-		}).then((data) => data.json());
-	};
-
-	updateSale = async () => {
-		await fetch(`/sales/${this.state.recordId}`, {
-			method: "PUT",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-				id: this.state.recordId,
-				productId: this.state.product,
-				customerId: this.state.customer,
-				storeId: this.state.store,
-				dateSold: this.state.dateSold,
-			}),
-		}).catch((error) => {
-			console.log(error);
-		});
-	};
 }

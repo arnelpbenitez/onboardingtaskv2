@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import {
 	TableRow,
 	TableHeaderCell,
@@ -25,6 +25,9 @@ export default class StoreList extends Component {
 		activePage: 1,
 		open: false,
 		loading: true,
+		success: false,
+		error: false,
+		message: "",
 	};
 
 	componentDidUpdate(prevProps) {
@@ -60,27 +63,59 @@ export default class StoreList extends Component {
 	};
 
 	deleteStore = async () => {
+		if (!this.state.recordId) {
+			this.setState({
+				error: true,
+				success: false,
+				message: "Invalid store id",
+			});
+			return;
+		}
+
 		await fetch(`/stores/${this.state.recordId}`, {
 			method: "DELETE",
 			headers: { "Content-Type": "application/json" },
-		}).then((data) => {
-			const stores = this.state.stores.filter(
-				(store) => store.id !== this.state.recordId
-			);
-			this.setState({ stores });
+		})
+			.then((data) => {
+				if (data.ok) {
+					const stores = this.state.stores.filter(
+						(store) => store.id !== this.state.recordId
+					);
+					this.setState({ stores });
 
-			const limit = 5;
+					const limit = 5;
 
-			this.setState({
-				begin: this.state.activePage * limit - limit,
-				end: this.state.activePage * limit,
-				storesPaged: stores.slice(
-					this.state.activePage * limit - limit,
-					this.state.activePage * limit
-				),
-				open: false,
+					this.setState({
+						begin: this.state.activePage * limit - limit,
+						end: this.state.activePage * limit,
+						storesPaged: stores.slice(
+							this.state.activePage * limit - limit,
+							this.state.activePage * limit
+						),
+						open: false,
+					});
+
+					this.props.deleteRecord(
+						true,
+						"Record deleted successfully."
+					);
+				}
+				return data.json();
+			})
+			.then((json) => {
+				if (json.error) {
+					throw new Error(json.message);
+				}
+			})
+			.catch((e) => {
+				this.setState({
+					open: false,
+				});
+				this.props.deleteRecord(
+					false,
+					e.message || "Something went wrong"
+				);
 			});
-		});
 	};
 
 	render() {

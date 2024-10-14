@@ -29,6 +29,14 @@ export default class CustomerForm extends Component {
 				address: this.props.data.address,
 			});
 		}
+
+		if (prevProps.message !== this.props.message) {
+			this.setState({
+				success: this.props.success,
+				error: !this.props.success,
+				message: this.props.message,
+			});
+		}
 	}
 
 	handleListChange = () => {
@@ -36,10 +44,30 @@ export default class CustomerForm extends Component {
 	};
 
 	handleOpen = () =>
-		this.setState({ open: true, name: "", address: "", recordId: 0 });
+		this.setState({
+			open: true,
+			name: "",
+			address: "",
+			recordId: 0,
+			error: false,
+			success: false,
+			message: "",
+		});
+
+	handleCancel = () => {
+		this.setState({
+			open: false,
+			message: "",
+			error: false,
+			success: false,
+		});
+		this.props.closeForm();
+	};
 
 	handleClose = () => {
-		this.setState({ open: false });
+		this.setState({
+			open: false,
+		});
 		this.props.closeForm();
 	};
 	handleChange = (e) => {
@@ -48,34 +76,125 @@ export default class CustomerForm extends Component {
 
 	handleSubmit = async (e) => {
 		e.preventDefault();
-		if (this.state.recordId > 0) {
-			await this.updateCustomer();
-		} else {
-			await this.addCustomer();
+		try {
+			if (this.state.recordId > 0) {
+				await this.updateCustomer();
+			} else {
+				await this.addCustomer();
+			}
+			this.handleListChange();
+
+			this.setState({ name: "", address: "" });
+
+			this.handleClose();
+		} catch (e) {
+			this.setState({
+				success: false,
+				error: true,
+				message: e.message ?? "An error occured.",
+			});
+		}
+	};
+
+	addCustomer = async () => {
+		if (this.state.name === "") {
+			throw new Error("Customer name is required");
 		}
 
-		this.handleListChange();
+		await fetch("/customers", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				id: 0,
+				name: this.state.name,
+				address: this.state.address,
+			}),
+		})
+			.then((data) => data.json())
+			.then((json) => {
+				if (json.errors) {
+					let message = [];
+					for (let key in json.errors) {
+						json.errors[key].forEach((item) => {
+							message = [...message, item];
+						});
+					}
 
-		this.setState({ name: "", address: "" });
+					throw new Error(
+						message.length
+							? message.join(" ")
+							: "Something went wrong please try again."
+					);
+				} else {
+					this.setState({
+						success: true,
+						error: false,
+						message: "New customer saved.",
+					});
 
-		this.handleClose();
+					return json;
+				}
+			})
+			.catch((error) => {
+				this.setState({
+					success: false,
+					error: true,
+					message:
+						error?.message ||
+						"An error has occurred please try again.",
+				});
+			});
+	};
+
+	updateCustomer = async () => {
+		if (this.state.name === "") {
+			throw new Error("Customer name is required");
+		}
+
+		if (!this.state.recordId) {
+			throw new Error("Invalid customer ID");
+		}
+
+		await fetch(`/customers/${this.state.recordId}`, {
+			method: "PUT",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				id: this.state.recordId,
+				name: this.state.name,
+				address: this.state.address,
+			}),
+		})
+			.then(() => {
+				this.setState({
+					error: false,
+					success: true,
+					message: "Customer record updated.",
+				});
+			})
+			.catch(() => {
+				this.setState({
+					error: true,
+					success: false,
+					message: "Unable to update the record",
+				});
+			});
 	};
 
 	render() {
-		const { open } = this.state;
+		const { open, recordId, success, error, message } = this.state;
 		return (
 			<Segment>
-				{this.state.success && (
+				{success && message != "" && (
 					<Message positive>
 						<MessageHeader>Success</MessageHeader>
-						<p>{this.state.message}</p>
+						<p>{message}</p>
 					</Message>
 				)}
 
-				{this.state.error && (
+				{error && message != "" && (
 					<Message negative>
 						<MessageHeader>Error</MessageHeader>
-						<p>{this.state.message}</p>
+						<p>{message}</p>
 					</Message>
 				)}
 
@@ -85,9 +204,15 @@ export default class CustomerForm extends Component {
 
 				<Modal open={open} onClose={this.handleClose} size="small">
 					<Modal.Header>
-						{this.state.recordId === 0 ? "Create" : "Edit"} Customer
+						{recordId === 0 ? "Create" : "Edit"} Customer
 					</Modal.Header>
 					<Modal.Content>
+						{error && message != "" && (
+							<Message negative>
+								<MessageHeader>Error</MessageHeader>
+								<p>{message}</p>
+							</Message>
+						)}
 						<Form onSubmit={this.handleSubmit}>
 							<Form.Field>
 								<label>Name</label>
@@ -112,7 +237,7 @@ export default class CustomerForm extends Component {
 						</Form>
 					</Modal.Content>
 					<Modal.Actions>
-						<Button onClick={this.handleClose} secondary>
+						<Button onClick={this.handleCancel} secondary>
 							Cancel
 						</Button>
 						<Button
@@ -121,7 +246,7 @@ export default class CustomerForm extends Component {
 							icon
 							labelPosition="right"
 						>
-							{this.state.recordId === 0 ? "Create" : "Edit"}{" "}
+							{recordId === 0 ? "Create" : "Edit"}{" "}
 							<Icon name="check circle" />
 						</Button>
 					</Modal.Actions>
@@ -129,59 +254,4 @@ export default class CustomerForm extends Component {
 			</Segment>
 		);
 	}
-
-	addCustomer = async () => {
-		await fetch("/customersa", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-				id: 0,
-				name: this.state.name,
-				address: this.state.address,
-			}),
-		})
-			.then((data) => {
-				if (data.ok) {
-					this.setState({
-						success: true,
-						error: false,
-						message: "New customer added.",
-					});
-					return data.json();
-				}
-				throw new Error("Something went wrong please try again.");
-			})
-			.catch((error) => {
-				console.log(error);
-				this.setState({
-					success: false,
-					error: true,
-					message:
-						error?.message ||
-						"An error has occurred please try again.",
-				});
-			});
-	};
-
-	updateCustomer = async () => {
-		await fetch(`/customers/${this.state.recordId}`, {
-			method: "PUT",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-				id: this.state.recordId,
-				name: this.state.name,
-				address: this.state.address,
-			}),
-		})
-			.then((date) => {
-				this.setState({
-					success: true,
-					message: "Customer record updated.",
-				});
-			})
-			.catch((error) => {
-				console.log(error);
-				this.setState({ error: true });
-			});
-	};
 }

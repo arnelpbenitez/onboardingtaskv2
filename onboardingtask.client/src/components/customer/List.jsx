@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import {
 	TableRow,
 	TableHeaderCell,
@@ -25,6 +25,9 @@ export default class CustomerList extends Component {
 		activePage: 1,
 		open: false,
 		loading: true,
+		success: false,
+		error: false,
+		message: "",
 	};
 
 	componentDidUpdate(prevProps) {
@@ -60,37 +63,66 @@ export default class CustomerList extends Component {
 	};
 
 	deleteCustomer = async () => {
+		if (!this.state.recordId) {
+			this.setState({
+				error: true,
+				success: false,
+				message: "Invalid customer id",
+			});
+			return;
+		}
+
 		await fetch(`/customers/${this.state.recordId}`, {
 			method: "DELETE",
 			headers: { "Content-Type": "application/json" },
 		})
 			.then((data) => {
-				const customers = this.state.customers.filter(
-					(customer) => customer.id !== this.state.recordId
-				);
-				this.setState({ customers });
+				if (data.ok) {
+					const customers = this.state.customers.filter(
+						(customer) => customer.id !== this.state.recordId
+					);
+					this.setState({ customers });
 
-				const limit = 5;
+					const limit = 5;
 
+					this.setState({
+						begin: this.state.activePage * limit - limit,
+						end: this.state.activePage * limit,
+						customersPaged: customers.slice(
+							this.state.activePage * limit - limit,
+							this.state.activePage * limit
+						),
+						open: false,
+					});
+
+					this.props.deleteRecord(
+						true,
+						"Record deleted successfully."
+					);
+				}
+				return data.json();
+			})
+			.then((json) => {
+				if (json.error) {
+					throw new Error(json.message);
+				}
+			})
+			.catch((e) => {
 				this.setState({
-					begin: this.state.activePage * limit - limit,
-					end: this.state.activePage * limit,
-					customersPaged: customers.slice(
-						this.state.activePage * limit - limit,
-						this.state.activePage * limit
-					),
 					open: false,
 				});
-			})
-			.catch((error) => {
-				console.log(error);
+				this.props.deleteRecord(
+					false,
+					e.message || "Something went wrong"
+				);
 			});
 	};
 
 	render() {
+		const { loading, customersPaged, customers, open } = this.state;
 		return (
 			<Segment>
-				{this.state.loading ? (
+				{loading ? (
 					<div>
 						<Dimmer active inverted>
 							<Loader inverted>Loading</Loader>
@@ -101,6 +133,7 @@ export default class CustomerList extends Component {
 				) : (
 					""
 				)}
+
 				<Table striped>
 					<TableHeader>
 						<TableRow>
@@ -112,7 +145,7 @@ export default class CustomerList extends Component {
 					</TableHeader>
 
 					<TableBody>
-						{this.state.customersPaged.map((item) => (
+						{customersPaged.map((item) => (
 							<TableRow key={item.id}>
 								<TableCell>{item.name} </TableCell>
 								<TableCell>{item.address}</TableCell>
@@ -154,17 +187,13 @@ export default class CustomerList extends Component {
 				</Table>
 				<Pagination
 					defaultActivePage={1}
-					totalPages={Math.ceil(this.state.customers.length / 5)}
+					totalPages={Math.ceil(customers.length / 5)}
 					onPageChange={(event, data) => {
 						this.handlePager(data);
 					}}
 				/>
 
-				<Modal
-					open={this.state.open}
-					onClose={this.handleClose}
-					size="small"
-				>
+				<Modal open={open} onClose={this.handleClose} size="small">
 					<Modal.Header>Delete Customer</Modal.Header>
 					<Modal.Content>
 						Are you sure you want to delete this customer?

@@ -75,8 +75,10 @@ export default class SaleForm extends Component {
 			dateSold:
 				dateSold.getFullYear() +
 				"-" +
+				(dateSold.getMonth() + 1 < 10 ? "0" : "") +
 				(dateSold.getMonth() + 1) +
 				"-" +
+				(dateSold.getDate() < 10 ? "0" : "") +
 				dateSold.getDate(),
 			customer: 0,
 			store: 0,
@@ -108,8 +110,10 @@ export default class SaleForm extends Component {
 			dateSold:
 				dateSold.getFullYear() +
 				"-" +
+				(dateSold.getMonth() + 1 < 10 ? "0" : "") +
 				(dateSold.getMonth() + 1) +
 				"-" +
+				(dateSold.getDate() < 10 ? "0" : "") +
 				dateSold.getDate(),
 			recordId: 0,
 		});

@@ -46,8 +46,10 @@ export default class SaleForm extends Component {
 				dateSold:
 					dateSold.getFullYear() +
 					"-" +
+					(dateSold.getMonth() + 1 < 10 ? "0" : "") +
 					(dateSold.getMonth() + 1) +
 					"-" +
+					(dateSold.getDate() < 10 ? "0" : "") +
 					dateSold.getDate(),
 				customer: this.props.data.customerId,
 				product: this.props.data.productId,

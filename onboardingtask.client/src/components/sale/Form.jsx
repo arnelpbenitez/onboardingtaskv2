@@ -8,7 +8,6 @@ import {
 	Modal,
 	Segment,
 } from "semantic-ui-react";
-import SemanticDatepicker from "react-semantic-ui-datepickers";
 
 export default class SaleForm extends Component {
 	state = {
@@ -16,7 +15,7 @@ export default class SaleForm extends Component {
 		store: this.props.data?.store ?? 0,
 		customer: this.props.data?.customer ?? 0,
 		product: this.props.data?.product ?? 0,
-		dateSold: this.props.data?.dateSold ?? new Date(),
+		dateSold: this.props.data?.dateSold ?? null,
 		recordId: 0,
 		customers: [],
 		products: [],
@@ -34,10 +33,22 @@ export default class SaleForm extends Component {
 
 	componentDidUpdate(prevProps) {
 		if (prevProps.recordId !== this.props.recordId) {
+			let dateSold = this.props.data.dateSold;
+			if (dateSold) {
+				dateSold = new Date(dateSold);
+			} else {
+				dateSold = new Date();
+			}
+
 			this.setState({
 				recordId: this.props.recordId,
 				open: this.props.recordId > 0,
-				dateSold: this.props.data.dateSold,
+				dateSold:
+					dateSold.getFullYear() +
+					"-" +
+					(dateSold.getMonth() + 1) +
+					"-" +
+					dateSold.getDate(),
 				customer: this.props.data.customerId,
 				product: this.props.data.productId,
 				store: this.props.data.storeId,
@@ -57,9 +68,16 @@ export default class SaleForm extends Component {
 		this.props.updateSale();
 	};
 
-	handleOpen = () =>
+	handleOpen = () => {
+		let dateSold = new Date();
 		this.setState({
 			open: true,
+			dateSold:
+				dateSold.getFullYear() +
+				"-" +
+				(dateSold.getMonth() + 1) +
+				"-" +
+				dateSold.getDate(),
 			customer: 0,
 			store: 0,
 			product: 0,
@@ -68,6 +86,7 @@ export default class SaleForm extends Component {
 			success: false,
 			message: "",
 		});
+	};
 
 	handleCancel = () => {
 		this.setState({
@@ -150,6 +169,10 @@ export default class SaleForm extends Component {
 	};
 
 	addSale = async () => {
+		if (!this.state.dateSold) {
+			throw new Error("Date sold is required");
+		}
+
 		if (!this.state.customer) {
 			throw new Error("Customer is required");
 		}
@@ -216,6 +239,10 @@ export default class SaleForm extends Component {
 	};
 
 	updateSale = async () => {
+		if (!this.state.dateSold) {
+			throw new Error("Date sold is required");
+		}
+
 		if (!this.state.customer) {
 			throw new Error("Customer is required");
 		}
@@ -295,14 +322,11 @@ export default class SaleForm extends Component {
 						<Form onSubmit={this.handleSubmit}>
 							<Form.Field>
 								<label>Date</label>
-								<SemanticDatepicker
+								<input
+									type="date"
 									name="dateSold"
-									onChange={this.handleChangeDate}
-									value={
-										this.state.dateSold
-											? new Date(this.state.dateSold)
-											: new Date()
-									}
+									onChange={this.handleChange}
+									value={this.state.dateSold}
 									autoComplete="off"
 								/>
 							</Form.Field>

@@ -76,4 +76,5 @@ export default defineConfig({
 			cert: fs.readFileSync(certFilePath),
 		},
 	},
+	commonjsOptions: { transformMixedEsModules: true },
 });

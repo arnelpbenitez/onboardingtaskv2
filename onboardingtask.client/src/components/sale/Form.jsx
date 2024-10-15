@@ -99,12 +99,18 @@ export default class SaleForm extends Component {
 	};
 
 	handleClose = () => {
+		let dateSold = new Date();
 		this.setState({
 			open: false,
 			customer: 0,
 			store: 0,
 			product: 0,
-			dateSold: new Date(),
+			dateSold:
+				dateSold.getFullYear() +
+				"-" +
+				(dateSold.getMonth() + 1) +
+				"-" +
+				dateSold.getDate(),
 			recordId: 0,
 		});
 

@@ -33,7 +33,7 @@ export default class SaleForm extends Component {
 
 	componentDidUpdate(prevProps) {
 		if (prevProps.recordId !== this.props.recordId) {
-			let dateSold = this.props.data.dateSold;
+			let dateSold = this.props.data.dateSold.replace("T", " ");
 			if (dateSold) {
 				dateSold = new Date(dateSold);
 			} else {
